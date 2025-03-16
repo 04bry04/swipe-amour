@@ -1,69 +1,114 @@
-# Welcome to your Lovable project
 
-## Project info
+# Application de Rencontre
 
-**URL**: https://lovable.dev/projects/fb94c5a3-edff-4f91-88af-58c91ffe2852
+Cette application de rencontre est une application web complète avec une interface utilisateur React et une backend API Node.js connectée à une base de données MySQL.
 
-## How can I edit this code?
+## Prérequis
 
-There are several ways of editing your application.
+- Node.js 18+ et npm
+- MySQL 8+
+- Ubuntu Server 24.04 (pour le déploiement)
 
-**Use Lovable**
+## Structure de l'application
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/fb94c5a3-edff-4f91-88af-58c91ffe2852) and start prompting.
+- **Frontend**: React, Tailwind CSS, Shadcn/UI
+- **Backend**: Node.js, Express
+- **Base de données**: MySQL
 
-Changes made via Lovable will be committed automatically to this repo.
+## Développement local
 
-**Use your preferred IDE**
+1. Clonez le dépôt
+2. Installez les dépendances avec `npm install`
+3. Configurez MySQL localement
+4. Importez le schéma de base de données avec `mysql -u root -p < src/database/schema.sql`
+5. Exécutez le serveur d'API avec `node server.js`
+6. Exécutez l'application frontend avec `npm run dev`
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Déploiement sur Ubuntu Server 24.04
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. Transférez tous les fichiers sur votre serveur
+2. Modifiez les variables dans `deploy.sh` selon votre configuration:
+   - `APP_NAME`: Nom de votre application
+   - `MYSQL_USER`: Utilisateur MySQL
+   - `MYSQL_PASSWORD`: Mot de passe MySQL (important: changez-le!)
+   - `MYSQL_DATABASE`: Nom de la base de données
+   - `DOMAIN`: Votre nom de domaine
 
-Follow these steps:
+3. Rendez le script exécutable:
+   ```
+   chmod +x deploy.sh
+   ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+4. Exécutez le script de déploiement en tant que root:
+   ```
+   sudo ./deploy.sh
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Le script effectuera automatiquement:
+- L'installation des dépendances système
+- La configuration de MySQL
+- L'importation du schéma de base de données
+- La configuration de Nginx avec HTTPS
+- La mise en place d'un service systemd pour l'API
 
-# Step 3: Install the necessary dependencies.
-npm i
+## Configuration
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### Variables d'environnement
+
+Les variables d'environnement suivantes peuvent être configurées:
+
+- `DB_HOST`: Hôte MySQL (par défaut: localhost)
+- `DB_USER`: Utilisateur MySQL
+- `DB_PASSWORD`: Mot de passe MySQL
+- `DB_NAME`: Nom de la base de données
+- `DB_PORT`: Port MySQL (par défaut: 3306)
+- `PORT`: Port du serveur API (par défaut: 3000)
+
+### Sécurité
+
+Cette application utilise:
+- HTTPS avec Let's Encrypt
+- Hachage des mots de passe avec bcrypt
+- Communication API sécurisée avec tokens
+
+## Maintenance
+
+### Sauvegarde de la base de données
+
+Pour sauvegarder la base de données:
+
+```
+mysqldump -u root -p dating_app > backup_$(date +%Y%m%d).sql
 ```
 
-**Edit a file directly in GitHub**
+### Mise à jour de l'application
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. Arrêtez le service: `sudo systemctl stop dating-app`
+2. Mettez à jour les fichiers
+3. Redémarrez le service: `sudo systemctl start dating-app`
 
-**Use GitHub Codespaces**
+## Structure de la base de données
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+La base de données contient les tables suivantes:
+- `users`: Profils des utilisateurs
+- `user_photos`: Photos des utilisateurs
+- `matches`: Correspondances entre utilisateurs
+- `likes`: Swipes positifs
+- `messages`: Messages échangés entre utilisateurs
 
-## What technologies are used for this project?
+## Dépannage
 
-This project is built with .
+### Vérifier l'état du service API
+```
+sudo systemctl status dating-app
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Consulter les logs
+```
+sudo journalctl -u dating-app -f
+```
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/fb94c5a3-edff-4f91-88af-58c91ffe2852) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+### Vérifier la connexion à la base de données
+```
+curl http://localhost:3000/api/health
+```
