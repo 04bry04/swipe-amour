@@ -36,18 +36,20 @@ export const FadeInView: React.FC<FadeInViewProps> = ({
         willChange: 'opacity, transform'
       }}
     >
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: ${getTransform()};
+      <style>
+        {`
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+              transform: ${getTransform()};
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0) translateX(0);
+            }
           }
-          to {
-            opacity: 1;
-            transform: translateY(0) translateX(0);
-          }
-        }
-      `}</style>
+        `}
+      </style>
       {children}
     </div>
   );
