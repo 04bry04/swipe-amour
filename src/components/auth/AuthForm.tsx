@@ -3,22 +3,61 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import GlassmorphicCard from '../ui/GlassmorphicCard';
 import FadeInView from '../animations/FadeInView';
+import { useNavigate } from 'react-router-dom';
+import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const AuthForm: React.FC = () => {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAuth = (action: 'login' | 'register') => {
+  const validateInputs = () => {
+    if (!email || !email.includes('@')) {
+      setError('Veuillez entrer un email valide');
+      return false;
+    }
+    if (!password || password.length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères');
+      return false;
+    }
+    setError(null);
+    return true;
+  };
+
+  const handleAuth = async (action: 'login' | 'register') => {
+    console.log(`${action} with:`, { email, password });
+    
+    if (!validateInputs()) return;
+    
     setIsLoading(true);
-    // Simulate authentication process
-    setTimeout(() => {
-      console.log(`${action} with:`, { email, password });
+    
+    try {
+      // Simulation d'authentification (à remplacer par une vraie API)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Simulation réussie
+      toast.success(action === 'login' 
+        ? 'Connexion réussie !' 
+        : 'Compte créé avec succès !');
+      
+      // Redirection vers la page de swipe
+      setTimeout(() => {
+        navigate('/swipe');
+      }, 500);
+    } catch (error) {
+      console.error('Erreur d\'authentification:', error);
+      setError(action === 'login'
+        ? 'Impossible de se connecter. Vérifiez vos identifiants.'
+        : 'Impossible de créer un compte. Veuillez réessayer.');
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -29,6 +68,13 @@ const AuthForm: React.FC = () => {
             <TabsTrigger value="login">Connexion</TabsTrigger>
             <TabsTrigger value="register">Inscription</TabsTrigger>
           </TabsList>
+          
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
           
           <TabsContent value="login" className="space-y-6">
             <div className="space-y-2">
