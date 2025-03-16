@@ -1,13 +1,12 @@
 
-import axios from 'axios';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// URL de base de l'API - à configurer selon votre environnement
-const API_URL = process.env.NODE_ENV === 'production' 
-  ? '/api'
-  : 'http://localhost:3000/api';
+// Configuration Supabase - remplacez par vos clés
+const SUPABASE_URL = 'https://votre-projet.supabase.co';
+const SUPABASE_ANON_KEY = 'votre-clé-publique-supabase';
 
 export interface User {
-  id: number;
+  id: string;
   email: string;
   username?: string;
   location?: string;
@@ -17,25 +16,42 @@ export interface User {
 
 export interface AuthResponse {
   user: User;
-  token: string;
+  session: any;
 }
 
 export class AuthService {
-  static getApiUrl() {
-    return API_URL;
+  private static supabase: SupabaseClient;
+
+  static initialize() {
+    if (!this.supabase) {
+      this.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+    return this.supabase;
+  }
+
+  static getSupabase() {
+    return this.initialize();
   }
 
   static async login(email: string, password: string): Promise<AuthResponse> {
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, {
+      const { data, error } = await this.getSupabase().auth.signInWithPassword({
         email,
         password,
       });
       
-      // Stocker le token dans le localStorage
-      localStorage.setItem('authToken', response.data.token);
+      if (error) throw error;
       
-      return response.data;
+      const { user, session } = data;
+      
+      return { 
+        user: {
+          id: user?.id || '',
+          email: user?.email || '',
+          created_at: user?.created_at || new Date().toISOString()
+        }, 
+        session 
+      };
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -44,49 +60,74 @@ export class AuthService {
 
   static async register(email: string, password: string, username?: string): Promise<AuthResponse> {
     try {
-      const response = await axios.post(`${API_URL}/auth/register`, {
+      const { data, error } = await this.getSupabase().auth.signUp({
         email,
         password,
-        username,
+        options: {
+          data: {
+            username,
+          },
+        },
       });
       
-      // Stocker le token dans le localStorage
-      localStorage.setItem('authToken', response.data.token);
+      if (error) throw error;
       
-      return response.data;
+      const { user, session } = data;
+      
+      // Si l'inscription est réussie, créer un profil utilisateur
+      if (user) {
+        await this.getSupabase()
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            username: username || email.split('@')[0],
+            created_at: new Date().toISOString(),
+          });
+      }
+      
+      return { 
+        user: {
+          id: user?.id || '',
+          email: user?.email || '',
+          username,
+          created_at: user?.created_at || new Date().toISOString()
+        }, 
+        session 
+      };
     } catch (error) {
       console.error('Register error:', error);
       throw error;
     }
   }
 
-  static logout() {
-    localStorage.removeItem('authToken');
-  }
-
-  static getToken() {
-    return localStorage.getItem('authToken');
+  static async logout() {
+    const { error } = await this.getSupabase().auth.signOut();
+    if (error) throw error;
   }
 
   static isAuthenticated() {
-    return !!this.getToken();
+    return this.getSupabase().auth.getSession().then(({ data }) => {
+      return !!data.session;
+    });
   }
 
   static async getProfile() {
     try {
-      const token = this.getToken();
+      const { data: { session } } = await this.getSupabase().auth.getSession();
       
-      if (!token) {
+      if (!session) {
         throw new Error('Not authenticated');
       }
       
-      const response = await axios.get(`${API_URL}/profile`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const { data, error } = await this.getSupabase()
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
       
-      return response.data;
+      if (error) throw error;
+      
+      return data;
     } catch (error) {
       console.error('Get profile error:', error);
       throw error;
